@@ -2,15 +2,23 @@ package com.nuix.s3fileprocessing.service;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.config.model.MessageType;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvException;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.MessageTypeParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.io.*;
+import java.nio.file.FileAlreadyExistsException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -26,6 +34,9 @@ public class S3ServiceImpl implements S3Service {
     @Value("${s3.bucket}")
     private String bucketName;
 
+    File destDir = new File("src/main/resources/");
+
+
 
 
     @Override
@@ -33,7 +44,7 @@ public class S3ServiceImpl implements S3Service {
         ObjectListing inputFileObjects = null;
         String fileKey = null;
         byte[] buffer = new byte[1024];
-        File destDir = new File("src/main/resources/");
+
         // Get summary information for all objects in the input bucket
         inputFileObjects = s3client.listObjects(bucketName);
         do {
@@ -67,8 +78,7 @@ public class S3ServiceImpl implements S3Service {
                                 try (FileOutputStream newoutputStream = new FileOutputStream(newFile))
                                 {
                                    // BufferedInputStream inputStream = new BufferedInputStream(zipFile.getInputStream(entry));
-                                    while (is.available() > 0)
-                                    {
+                                    while (is.available() > 0) {
                                         newoutputStream.write(is.read());
                                     }
                                     is.close();
@@ -97,61 +107,45 @@ public class S3ServiceImpl implements S3Service {
         } while (inputFileObjects.isTruncated());
     }
 
-    /*public static void convertCsvToParquet(File csvFile, File outputParquetFile, boolean enableDictionary) throws IOException {
-        logger.info("Converting " + csvFile.getName() + " to " + outputParquetFile.getName());
-        String rawSchema = getSchema(csvFile);
-        if(outputParquetFile.exists()) {
-            throw new IOException("Output file " + outputParquetFile.getAbsolutePath() +
-                    " already exists");
-        }
 
-        Path path = new Path(outputParquetFile.toURI());
+    @Override
+    public void filterCsvFile(String filterValue) throws IOException {
+        File [] files = destDir.listFiles(obj -> obj.isFile() && obj.getName().endsWith(".csv"));
+        final char csvDelimeter = ',';
 
-        MessageType schema = MessageTypeParser.parseMessageType(rawSchema);
-        CsvParquetWriter writer = new CsvParquetWriter(path, schema, enableDictionary);
-
-        BufferedReader br = new BufferedReader(new FileReader(csvFile));
-        String line;
-        int lineNumber = 0;
-        try {
-            while ((line = br.readLine()) != null) {
-                String[] fields = line.split(Pattern.quote(CSV_DELIMITER));
-                writer.write(Arrays.asList(fields));
-                ++lineNumber;
+        for(File csvSourceFile:files){
+            int lastDotIndex = csvSourceFile.getName().lastIndexOf('.');
+            String outputfile = csvSourceFile.getName().substring(0, lastDotIndex ) + "_FilteredFile" + csvSourceFile.getName().substring(lastDotIndex);
+            File newCsvFile = new File(destDir+"/filtered/"+outputfile);
+            if(!newCsvFile.exists()) {
+                FileWriter newCsvFileWriter = new FileWriter(newCsvFile);
+             //  CSVWriter writer = new CSVWriter(newCsvFileWriter);
+               CSVWriter writer = new CSVWriter(newCsvFileWriter,csvDelimeter,'\0',
+                        CSVWriter.NO_QUOTE_CHARACTER,CSVWriter.DEFAULT_LINE_END);
+                try (CSVReader reader = new CSVReader(new FileReader(csvSourceFile.getAbsolutePath()))) {
+                    List<String[]> r = reader.readAll();
+                    writer.writeNext(r.get(0));
+                    for (String[] row : r) {
+                        //writer.writeNext(row.);
+                        for (String cell : row) {
+                            if (cell.contains(filterValue)) {
+                                writer.writeNext(row);
+                            }
+                        }
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (CsvException e) {
+                    e.printStackTrace();
+                }
+                writer.close();
+            } else {
+                throw new FileAlreadyExistsException(newCsvFile.getName());
             }
-
-            writer.close();
-        } finally {
-            logger.info("Number of lines: " + lineNumber);
-           // Utils.closeQuietly(br);
         }
     }
-
-    public static String getSchema(File csvFile) throws IOException {
-        String fileName = csvFile.getName().substring(
-                0, csvFile.getName().length() - ".csv".length()) + ".schema";
-        File schemaFile = new File(csvFile.getParentFile(), fileName);
-        return readFile(schemaFile.getAbsolutePath());
-    }
-    private static String readFile(String path) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(path));
-        StringBuilder stringBuilder = new StringBuilder();
-
-        try {
-            String line = null;
-            String ls = System.getProperty("line.separator");
-
-            while ((line = reader.readLine()) != null ) {
-                stringBuilder.append(line);
-                stringBuilder.append(ls);
-            }
-        } finally {
-            //Utils.closeQuietly(reader);
-        }
-
-        return stringBuilder.toString();
-    }
-*/
 
     @Override
     public void uploadFile(String keyName, String uploadFilePath) {

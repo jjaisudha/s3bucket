@@ -14,7 +14,7 @@ public class S3fileprocessingApplication implements CommandLineRunner {
 	S3Service s3Services;
 
 	@Value("${s3.access.key.name}")
-	private String downloadKey;
+	private String key;
 
 	public static void main(String[] args) {
 		SpringApplication.run(S3fileprocessingApplication.class, args);
@@ -23,10 +23,13 @@ public class S3fileprocessingApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-		/*System.out.println("---------------- START UPLOAD FILE ----------------");
-		s3Services.uploadFile("jsa-s3-upload-file.txt", uploadFilePath);*/
+
 		System.out.println("---------------- START DOWNLOAD FILE ----------------");
-		s3Services.downloadFile(downloadKey);
+		//s3Services.downloadFile(key);
+		//s3Services.filterCsvFile("ellipsis");
+		System.out.println("---------------- START UPLOAD FILE ----------------");
+		s3Services.uploadFile(key, "src/main/resources/filtered/AirbnbListing_FilteredFile.csv");
+
 	}
 
 }
