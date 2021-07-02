@@ -7,9 +7,6 @@ import com.amazonaws.services.s3.model.*;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.MessageTypeParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,13 +84,6 @@ public class S3ServiceImpl implements S3Service {
                                     is.close();
                                 }
                             }
-
-                            /*ObjectMetadata meta = new ObjectMetadata();
-                            meta.setContentLength(outputStream.size());
-                            meta.setContentType(mimeType);
-                            s3client.putObject(bucketName, FilenameUtils.getFullPath(fileKey) + fileName, is, meta);
-                            is.close();
-                            outputStream.close();*/
                             entry = zis.getNextEntry();
                         }
                         zis.closeEntry();
@@ -101,9 +91,7 @@ public class S3ServiceImpl implements S3Service {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
                     logger.info("Content-Type: " + s3object.getObjectMetadata().getContentType());
-
                 }
                 inputFileObjects = s3client.listNextBatchOfObjects(inputFileObjects);
             }
@@ -132,12 +120,12 @@ public class S3ServiceImpl implements S3Service {
 
             if(!newCsvFile.exists()) {
                 FileWriter newCsvFileWriter = new FileWriter(newCsvFile);
-             //  CSVWriter writer = new CSVWriter(newCsvFileWriter);
-               CSVWriter writer = new CSVWriter(newCsvFileWriter,csvDelimeter,'\0',
-                        CSVWriter.NO_QUOTE_CHARACTER,CSVWriter.DEFAULT_LINE_END);
+                CSVWriter writer = new CSVWriter(newCsvFileWriter,csvDelimeter,'\0',
+                       CSVWriter.NO_QUOTE_CHARACTER,CSVWriter.DEFAULT_LINE_END);
                 try (CSVReader reader = new CSVReader(new FileReader(csvSourceFile.getAbsolutePath()))) {
                     List<String[]> r = reader.readAll();
-                    writer.writeNext(r.get(0));
+                    //To-do This line has to be considered after standardizing the CSV formats
+                  //  writer.writeNext(r.get(0));
                     for (String[] row : r) {
                         for (String cell : row) {
                             if (cell.contains(filterValue)) {
@@ -160,6 +148,17 @@ public class S3ServiceImpl implements S3Service {
         logger.info("filterCsvFile ends: " + filterValue);
     }
 
+    @Override
+
+    public void createParquetFile(String csvLocation) throws IOException {
+        /*File uploadDir = new File(csvLocation);
+        File [] uploadFilesList = uploadDir.listFiles(obj -> obj.isFile() && obj.getName().endsWith(".csv"));
+        for(File csvFile:uploadFilesList){
+            //To-do Need to convert csv file to parquet file before upload to s3 bucket
+        }*/
+
+
+    }
     /**
      *
      * @param keyName

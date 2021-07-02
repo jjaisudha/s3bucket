@@ -18,6 +18,11 @@ public interface S3Service {
 
     /**
      *
+     */
+    public void createParquetFile(String csvLocation) throws IOException;
+
+    /**
+     *
      * @param keyName
      * @param uploadFilePath
      */

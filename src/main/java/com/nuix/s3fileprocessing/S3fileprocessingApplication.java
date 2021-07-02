@@ -25,12 +25,13 @@ public class S3fileprocessingApplication implements CommandLineRunner {
 
 
 		System.out.println("---------------- START DOWNLOAD FILE ----------------");
-		//s3Services.downloadFile(key);
+		s3Services.downloadFile(key);
 		System.out.println("---------------- START SEARCHING INTO FILE ----------------");
 		s3Services.filterCsvFile("ellipsis");
+		System.out.println("---------------- CONVERT TO PARQUET FILE----------------");
+		s3Services.createParquetFile("src/main/resources/filtered/");
 		System.out.println("---------------- START UPLOAD FILE ----------------");
-		//tested only for one file
-		//s3Services.uploadFile(key, "src/main/resources/filtered/");
+		s3Services.uploadFile(key, "src/main/resources/filtered/");
 
 	}
 
