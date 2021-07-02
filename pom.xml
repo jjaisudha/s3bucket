@@ -70,6 +70,11 @@
 			<version>5.3</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.parquet</groupId>
 			<artifactId>parquet-column</artifactId>
 			<version>1.8.0</version>
@@ -82,18 +87,21 @@
 			<version>1.9.0</version>
 			<type>pom</type>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.parquet</groupId>
-			<artifactId>parquet-tools</artifactId>
-			<version>1.9.0</version>
+		<!--<dependency>
+			<groupId>com.twitter</groupId>
+			<artifactId>parquet-column</artifactId>
+			<version>1.6.0</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-hdfs -->
+		<dependency>
+			<groupId>com.twitter</groupId>
+			<artifactId>parquet-hadoop</artifactId>
+			<version>1.6.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-hdfs</artifactId>
-			<version>3.3.1</version>
-			<scope>test</scope>
-		</dependency>
+			<artifactId>hadoop-common</artifactId>
+			<version>2.4.0</version>
+		</dependency>-->
 
 
 

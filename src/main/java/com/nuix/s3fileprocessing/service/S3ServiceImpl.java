@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.model.*;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
 import org.slf4j.Logger;
@@ -15,10 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.io.*;
+import java.net.FileNameMap;
+import java.net.URLConnection;
 import java.nio.file.FileAlreadyExistsException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -27,7 +28,7 @@ import java.util.zip.ZipInputStream;
 @Service
 public class S3ServiceImpl implements S3Service {
 
-    private Logger logger = LoggerFactory.getLogger(S3ServiceImpl.class);
+    private final Logger logger = LoggerFactory.getLogger(S3ServiceImpl.class);
     @Autowired
     private AmazonS3 s3client;
 
@@ -36,9 +37,10 @@ public class S3ServiceImpl implements S3Service {
 
     File destDir = new File("src/main/resources/");
 
-
-
-
+    /**
+     *
+     * @param keyName
+     */
     @Override
     public void downloadFile(String keyName) {
         ObjectListing inputFileObjects = null;
@@ -52,7 +54,7 @@ public class S3ServiceImpl implements S3Service {
             // Get the object key from each object summary
             for (S3ObjectSummary objectSummary : inputFileObjects.getObjectSummaries()) {
                 fileKey = objectSummary.getKey();
-                System.out.println("DataTransformer: Transforming file: " + fileKey);
+                logger.info("downloadFile starts: " + fileKey);
 
                 if (fileKey.endsWith(".zip")) {
                     // Retrieve the object with the specified key from the input bucket
@@ -64,7 +66,8 @@ public class S3ServiceImpl implements S3Service {
                         while(entry != null) {
                             String fileName = entry.getName();
                             File newFile = new File(destDir, entry.getName());
-
+                            FileNameMap fileNameMap = URLConnection.getFileNameMap();
+                            String mimeType = fileNameMap.getContentTypeFor(fileName);
                             //String mimeType = FileMimeType.fromExtension(FilenameUtils.getExtension(fileName)).mimeType();
                             System.out.println("Extracting " + fileName + ", compressed: " + entry.getCompressedSize() + " bytes, extracted: " + entry.getSize());
                             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -99,24 +102,34 @@ public class S3ServiceImpl implements S3Service {
                         e.printStackTrace();
                     }
 
-                    System.out.println("Content-Type: " + s3object.getObjectMetadata().getContentType());
+                    logger.info("Content-Type: " + s3object.getObjectMetadata().getContentType());
 
                 }
                 inputFileObjects = s3client.listNextBatchOfObjects(inputFileObjects);
             }
         } while (inputFileObjects.isTruncated());
+
+        logger.info("downloadFile ends: " + fileKey);
     }
 
-
+    /**
+     *
+     * @param filterValue
+     * @throws IOException
+     */
     @Override
     public void filterCsvFile(String filterValue) throws IOException {
+        logger.info("filterCsvFile starts: " + filterValue);
+
         File [] files = destDir.listFiles(obj -> obj.isFile() && obj.getName().endsWith(".csv"));
         final char csvDelimeter = ',';
 
         for(File csvSourceFile:files){
+            logger.info("Scanning the file : " + csvSourceFile.getName());
             int lastDotIndex = csvSourceFile.getName().lastIndexOf('.');
             String outputfile = csvSourceFile.getName().substring(0, lastDotIndex ) + "_FilteredFile" + csvSourceFile.getName().substring(lastDotIndex);
             File newCsvFile = new File(destDir+"/filtered/"+outputfile);
+
             if(!newCsvFile.exists()) {
                 FileWriter newCsvFileWriter = new FileWriter(newCsvFile);
              //  CSVWriter writer = new CSVWriter(newCsvFileWriter);
@@ -144,8 +157,14 @@ public class S3ServiceImpl implements S3Service {
                 throw new FileAlreadyExistsException(newCsvFile.getName());
             }
         }
+        logger.info("filterCsvFile ends: " + filterValue);
     }
 
+    /**
+     *
+     * @param keyName
+     * @param uploadFilePath
+     */
     @Override
     public void uploadFile(String keyName, String uploadFilePath) {
         File uploadDir = new File(uploadFilePath);
@@ -168,15 +187,4 @@ public class S3ServiceImpl implements S3Service {
             logger.info("Error Message: " + ace.getMessage());
         }
     }
-
-    public static void displayText(InputStream input) throws IOException {
-        // Read one text line at a time and display.
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-        while (true) {
-            String line = reader.readLine();
-            if (line == null) break;
-            System.out.println("    " + line);
-        }
-    }
-
 }
