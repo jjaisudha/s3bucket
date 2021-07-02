@@ -126,7 +126,6 @@ public class S3ServiceImpl implements S3Service {
                     List<String[]> r = reader.readAll();
                     writer.writeNext(r.get(0));
                     for (String[] row : r) {
-                        //writer.writeNext(row.);
                         for (String cell : row) {
                             if (cell.contains(filterValue)) {
                                 writer.writeNext(row);
@@ -149,13 +148,14 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public void uploadFile(String keyName, String uploadFilePath) {
+        File uploadDir = new File(uploadFilePath);
+        File [] uploadFilesList = uploadDir.listFiles(obj -> obj.isFile() && obj.getName().endsWith(".csv"));
 
         try {
-
-            File file = new File(uploadFilePath);
-            s3client.putObject(new PutObjectRequest(bucketName, keyName, file));
-            logger.info("===================== Upload File - Done! =====================");
-
+            for(File uploadFile:uploadFilesList){
+                s3client.putObject(new PutObjectRequest(bucketName, keyName, uploadFile));
+                logger.info("===================== Upload File "+ uploadFile.getName()+" - Done! =====================");
+            }
         } catch (AmazonServiceException ase) {
             logger.info("Caught an AmazonServiceException from PUT requests, rejected reasons:");
             logger.info("Error Message:    " + ase.getMessage());

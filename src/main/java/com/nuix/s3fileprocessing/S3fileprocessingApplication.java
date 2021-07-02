@@ -28,7 +28,8 @@ public class S3fileprocessingApplication implements CommandLineRunner {
 		//s3Services.downloadFile(key);
 		//s3Services.filterCsvFile("ellipsis");
 		System.out.println("---------------- START UPLOAD FILE ----------------");
-		s3Services.uploadFile(key, "src/main/resources/filtered/AirbnbListing_FilteredFile.csv");
+		//tested only for one file
+		//s3Services.uploadFile(key, "src/main/resources/filtered/");
 
 	}
 
