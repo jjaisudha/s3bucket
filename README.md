@@ -21,5 +21,12 @@ The CSV downloaded from S3 must be standadised.
  3. Reading the CSV uses brute force approach, could be refactored
  4. Need to write more tests
  
+ Design Approach on creating Parquet file in java
+ 1. Added necessary dependencies in maven to do this activity
+ 2.Determine the path of the csv and the output paraquet files 
+ 3. Determine the Schema for each csv have separate schema definition.
+ 2. Read from the _filtered.csv and then map the data wrt to the schema.
+ 3. create a ParquetWriter and write the data to it using the Schema file
+ 
  Setup 
 1. Please replace the proper credentials in the application.properties before running the project
